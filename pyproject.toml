@@ -20,11 +20,6 @@ classifiers = [
     "Topic :: Software Development :: Libraries",
 ]
 
-[project.urls]
-Homepage = "https://github.com/hsnwhte/pluggle"
-Repository = "https://github.com/hsnwhte/pluggle"
-"Strategy Catalog" = "https://github.com/hsnwhte/pluggle-strategies"
-
 dependencies = [
     "pydantic>=2.13",
     "sqlalchemy>=2.0",
@@ -38,6 +33,11 @@ dependencies = [
     "openpyxl>=3.1",
     "pypdf>=6.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/hsnwhte/pluggle"
+Repository = "https://github.com/hsnwhte/pluggle"
+"Strategy Catalog" = "https://github.com/hsnwhte/pluggle-strategies"
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "pytest-cov", "ruff>=0.8"]
