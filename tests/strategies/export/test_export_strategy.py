@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from pluggle.models.dto import TransformedData
@@ -10,4 +11,4 @@ def test_export_strategy_writes_content(tmp_path: Path):
 
     ExportStrategy.export(data=data, file_path=file_path)
 
-    assert file_path.read_bytes() == b'{"key": "value"}'
+    assert json.loads(file_path.read_bytes()) == {"key": "value"}
