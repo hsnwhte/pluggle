@@ -21,11 +21,36 @@ logger = logging.getLogger(__name__)
 
 
 class Orchestrator:
+    """Drives one pipeline run from source to target.
+
+    Routes by IO type: file sources are decoded, API and DB sources are
+    fetched (API results are served from the fetch cache when available).
+    Extract and Transform then run for every route, and the result is
+    either loaded or exported depending on target type.
+
+    Owns its own UnitOfWork, so callers pass only input arguments.
+
+    Args:
+        input_args: Validated source, target, format and strategy settings.
+    """
     def __init__(self, *, input_args: InputArgs):
         self.input_args = input_args
         self.uow = UnitOfWork()
 
     def run(self) -> int:
+        """Execute the pipeline and return the final registry entry id.
+
+        Registers a run, then walks the phases in order. On success,
+        pipeline work is committed before the run is marked COMPLETE —
+        the two sessions must not hold open write transactions at the
+        same time, which SQLite rejects. On failure, pipeline work is
+        rolled back, the run is marked INTERRUPTED with the failing
+        phase, and the original exception propagates.
+
+        Raises:
+            PluggleError: Any pipeline failure, after the run is recorded
+                as interrupted.
+        """
         current_phase = None
         run_id: int = self.uow.run_records_store.register_run()
         logger.info(f"Initiating run: {run_id}")
@@ -254,6 +279,11 @@ class Orchestrator:
         return entry_id
 
     def _fetch(self, run_id: int) -> int:
+        """Fetch from an API or DB source and register the result.
+
+        API fetches are additionally written to the fetch cache, so a
+        later run against the same URL can reuse the stored payload.
+        """
         fetch_strategy = selector.get_fetch_strategy(self.input_args.source_type)
         logger.debug(f"Applying strategy: '{fetch_strategy.__name__}'")
 

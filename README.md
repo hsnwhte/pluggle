@@ -1,15 +1,15 @@
-# Pluggle v0.85 - alpha
+# Pluggle v0.9.0 - beta
 
 Generic, plugin-based ETL & data sync engine. Fetches from a source transforms it, and
 loads it to a target — with the transform step designed to carry your own business
 logic, not a fixed built-in one. Source and target types can be API, database, or file.
 
-> **Status: Alpha.** Core pipeline (Fetch → Decode → Extract →
+> **Status: Beta.** Core pipeline (Fetch → Decode → Extract →
 > Transform → Load/Export) is implemented and tested. See
-> [Known Limitations](#known-limitations) before relying on this in
+> [Known Limitations](#5-known-limitations) before relying on this in
 > production.
 
-## Installation
+## 1. Installation
 
 ```bash
 pip install -e .
@@ -23,7 +23,7 @@ linting) stays optional, for contributing to Pluggle itself:
 pip install -e ".[dev]"
 ```
 
-## Configuration
+## 2. Configuration
 
 Pluggle reads optional settings from a `.env` file in the project root:
 
@@ -49,7 +49,7 @@ For local PostgreSQL testing, `docker-compose.yml` is included:
 docker compose up -d
 ```
 
-## Usage
+## 3. Usage
 
 ```bash
 pluggle run \
@@ -60,7 +60,7 @@ pluggle run \
 
 Run `pluggle run --help` for the full list of options.
 
-### Other commands
+### 3.1 Other commands
 
 ```bash
 pluggle show --mode runs        # list past pipeline runs
@@ -74,7 +74,7 @@ pluggle version                  # print installed version
 
 Run any command with `--help` for its full option list.
 
-## Writing and installing a Transform strategy
+## 4. Writing and installing a Transform strategy
 
 Transform is the one phase with no fixed built-in implementation — it's where your own
 business logic (field mapping, filtering, reshaping data to fit your target) lives. The
@@ -140,7 +140,7 @@ pluggle uninstall-strategy --all
 `default` cannot be uninstalled. Don't edit the `installed/` folder by hand — use these
 commands so the strategy map always matches what's actually on disk.
 
-## Known Limitations
+## 5. Known Limitations
 
 - **No filename/format consistency check**: nothing validates that a file's extension
   matches `--target-format` (e.g. writing JSON content to a `.xml`-named file goes
@@ -156,6 +156,17 @@ commands so the strategy map always matches what's actually on disk.
   produces two separate installs with different uids, rather than recognizing it's
   already installed.
 
-## Roadmap
+## 6. Notes for contributors
+
+- **`RegistryEntry.address` means different things by phase.** In Fetch, Decode, Extract
+  and Transform it's a payload address (look it up via
+  `payload_store.load`). In Load and Export it's the target itself — a connection string
+  or a file path.
+- **The canonical format is not always `list[dict]`.** It's any JSON-serializable `list`
+  or `dict`. CSV/JSON/PDF Extract produce lists of records; XML/HTML produce a nested
+  dict; DOCX/XLSX produce a dict keyed by internal zip member. The shape follows the
+  source format's own structure rather than one fixed convention.
+
+## 7. Roadmap
 
 See `docs/ROADMAP.md` for planned milestones.

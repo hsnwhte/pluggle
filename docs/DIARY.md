@@ -984,4 +984,14 @@ meaningful "isolated" install to verify anymore, by design.
 
 **Status:** v0.85 complete.
 
+**18:33** | *[RESOLVE]*
+**Dropped two v0.9 checklist items instead of running them formally**
 
+"Every strategy file follows the same internal structure" and "error messages follow a
+consistent format" were never run as a dedicated pass, but both were substantially
+covered piecemeal: strategy consistency was checked file-by-file while writing each
+format in v0.7, and error message shape was tightened during the v0.8 audit
+(ExtractSyntaxError consolidation, LoadTableSerializationError,
+FetchCacheNotFoundError's hierarchy move). Decided a formal end-to-end pass on either
+would delay Beta for marginal additional confidence. Documented as a deliberate skip
+rather than silently dropped.
