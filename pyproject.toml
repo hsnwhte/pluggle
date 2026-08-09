@@ -8,6 +8,22 @@ version = "0.9.0"
 description = "Generic, plugin-based ETL & data sync engine."
 requires-python = ">=3.14"
 readme = "README.md"
+license = "MIT"
+authors = [
+    { name = "hsnwhte" }
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Libraries",
+]
+
+[project.urls]
+Homepage = "https://github.com/hsnwhte/pluggle"
+Repository = "https://github.com/hsnwhte/pluggle"
+"Strategy Catalog" = "https://github.com/hsnwhte/pluggle-strategies"
 
 dependencies = [
     "pydantic>=2.13",
