@@ -75,14 +75,16 @@ level
 verified to fail with a clear, actionable error when a feature is used without its group
 installed — not a raw ImportError
 
-v0.85 -- pluggle-strategies: a separate, curated repo of vetted Transform strategies
-(manually reviewed before being added, not an open marketplace). `pluggle install-strategy
-         --from-repo <name>` fetches and installs directly, in addition to the existing
-local-file install path. Transform strategy identity revisited if repo-sourced
-strategies raise new lineage questions. (Scope likely to grow as the repo takes shape.)
+v0.85 [DONE] -- pluggle-strategies: a separate, curated repo of vetted Transform
+strategies (manually reviewed before being added, not an open marketplace).
+`pluggle install-strategy --from-repo <name>` fetches and installs directly, in addition
+to the existing local-file install path. Transform strategy identity revisited if
+repo-sourced strategies raise new lineage questions. (Scope likely to grow as the repo
+takes shape.)
 
 v0.9 -- BETA release: README complete (setup, summary) complete. DEVELOPER_MANUAL.md
-(architecture, rationale) complete. Published to PyPI (pip install pluggle becomes real).
+(architecture, rationale) complete. Published to PyPI (pip install pluggle becomes
+real).
 
 Real-consumer validation: pluggle-ncr's first TransformStrategy (Excel source)
 implemented and run end-to-end against Pluggle as an external dependency (pip install,

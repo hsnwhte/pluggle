@@ -1,0 +1,59 @@
+{
+  "doc_meta": {
+    "title": "8D Problem Solving",
+    "no": "NC-123",
+    "date_open": "2026-08-08",
+    "internal": false,
+    "external": false,
+    "customer_complaint_no": "2026-123",
+    "initial_response": "Halt production",
+    "target_close_date": "2026-11-09",
+    "revision_dates": null,
+    "actual_close_date": null,
+    "initiator": "Tom Yorke",
+    "initiator_spvr": "n/a"
+  },
+  "definitions": {
+    "title": "Who is Impacted by the Problem?",
+    "customer": "Yorke Coorp.",
+    "address": "New Yok, NY",
+    "location": "USA",
+    "part_no": "Part-123",
+    "product_name": "Some Product"
+  },
+  "doc_body": {
+    "d1": {
+      "champion": "Tom Yorke",
+      "team_leader": "Tom Yorke",
+      "team_members": "Tom Yorke, Some Guy, Some Gal"
+    },
+    "d2": {
+      "problem_statement": "Some problem occurred during production at some machine equipment and it damaged some part."
+    },
+    "d3": {
+      "ica_description": "Party isolated. Party no: 12345",
+      "ica_effective": "1",
+      "ica_target_date": "2026-08-08",
+      "ica_actual_date": "2026-08-08"
+    },
+    "d4": {
+      "rc_description": null,
+      "rc_contribution": null
+    },
+    "d5": {
+      "choose_pca_description": null,
+      "choose_pca_effectivity": null
+    },
+    "d6": {
+      "implement_pca_description": null,
+      "implement_pca_target_date": null,
+      "implement_pca_actual_date": null
+    },
+    "d7": {
+      "spa_description": null,
+      "spa_target_date": null,
+      "spa_actual_date": null,
+      "corrective_action_review": null
+    }
+  }
+}

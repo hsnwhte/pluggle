@@ -1,7 +1,7 @@
 import logging
 
 from pluggle import helpers, settings
-from pluggle.enums import PluggleIOType, Phase, RunStatus
+from pluggle.enums import Phase, PluggleIOType, RunStatus
 from pluggle.exceptions import errors
 from pluggle.models.dto import (
     InputArgs,
