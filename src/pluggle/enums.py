@@ -2,6 +2,11 @@ import enum
 
 
 class Phase(enum.Enum):
+    """Pipeline phases, recorded per registry entry.
+
+    A run uses either FETCH or DECODE depending on source type, and
+    either LOAD or EXPORT depending on target type.
+    """
     FETCH = "fetch"
     DECODE = "decode"
     EXTRACT = "extract"
@@ -17,6 +22,11 @@ class RunStatus(enum.Enum):
 
 
 class ContentFormat(enum.Enum):
+    """Formats Pluggle can decode, extract and write.
+
+    Distinct from MimeType, which carries the wire-level strings used in
+    HTTP headers. The two share member names where they overlap.
+    """
     JSON = "json"
     XML = "xml"
     CSV = "csv"
@@ -27,6 +37,11 @@ class ContentFormat(enum.Enum):
 
 
 class MimeType(enum.Enum):
+    """MIME types as they appear in HTTP headers.
+
+    Broader than ContentFormat: image types are included for outgoing
+    Content-Type headers but have no decode or extract support.
+    """
     JSON = "application/json"
     XML = "application/xml"
     CSV = "text/csv"

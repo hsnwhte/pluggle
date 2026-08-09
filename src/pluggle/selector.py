@@ -14,6 +14,12 @@ from pluggle.strategies.protocols import (
 
 
 class Selector:
+    """Resolves which strategy class handles a given phase.
+
+    The single dispatch point between the Orchestrator and the strategy
+    maps, so adding a format or IO type means registering a class rather
+    than touching pipeline code.
+    """
     @staticmethod
     def get_fetch_strategy(source_type: PluggleIOType) -> FetchStrategyProtocol:
         smap = fetch.FETCH_STRATEGY_MAP
@@ -67,6 +73,11 @@ class Selector:
 
     @staticmethod
     def get_export_strategy() -> ExportStrategyProtocol:
+        """Return the export strategy.
+
+        Takes no argument: export always writes to a file, and the
+        strategy is format-agnostic.
+        """
         smap = export.EXPORT_STRATEGY_MAP
         try:
             return smap["file"]

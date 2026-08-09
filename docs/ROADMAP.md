@@ -82,23 +82,19 @@ to the existing local-file install path. Transform strategy identity revisited i
 repo-sourced strategies raise new lineage questions. (Scope likely to grow as the repo
 takes shape.)
 
-v0.9 -- BETA release: README complete (setup, summary) complete. DEVELOPER_MANUAL.md
-(architecture, rationale) complete. Published to PyPI (pip install pluggle becomes
-real).
+v0.9 [DONE]-- BETA release: README complete (setup, summary, rationale) complete.
+Published to PyPI (pip install pluggle becomes real).
 
 Real-consumer validation: pluggle-ncr's first TransformStrategy (Excel source)
 implemented and run end-to-end against Pluggle as an external dependency (pip install,
 not copy-pasted code). Any friction/gaps found this way get fixed in Pluggle core, not
-worked around in pluggle-ncr.
+worked around in pluggle-strategies.
 
 Consistency review, concrete checklist:
-[ ] Every public function/class has a docstring
-[ ] Every raised exception uses the custom hierarchy (grep for bare "raise Exception" /
+[x] Public API surface documented (Protocols, UnitOfWork, Selector, Orchestrator, CLI
+commands) — private/self-explanatory methods skipped by design
+[x] Every raised exception uses the custom hierarchy (grep for bare "raise Exception" /
 "raise ValueError" returns nothing)
-[ ] Every strategy file follows the same internal structure (same method names/order as
-the reference strategy)
-[ ] Error messages follow a consistent format (what failed, what value, what was
-expected)
 
 v1.0 -- Full release: portfolio-ready. Documented, tested, demonstrably extensible.
 Public-facing polish complete.

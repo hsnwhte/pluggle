@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pluggle"
-version = "0.8.5"
+version = "0.9.0"
 description = "Generic, plugin-based ETL & data sync engine."
 requires-python = ">=3.14"
 readme = "README.md"
