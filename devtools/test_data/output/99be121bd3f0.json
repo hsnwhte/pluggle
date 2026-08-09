@@ -1,0 +1,33 @@
+{
+  "doc_meta": {
+    "title": "8D Problem Solving",
+    "no": "NC-123",
+    "date_open": "46242",
+    "internal": false,
+    "external": false,
+    "customer_complaint_no": "2026-123",
+    "initial_response": "Halt production",
+    "target_close_date": "46335",
+    "revision_dates": null,
+    "actual_close_date": null,
+    "initiator": "Tom Yorke",
+    "initiator_spvr": "n/a"
+  },
+  "definitions": {
+    "title": "Who is Impacted by the Problem?",
+    "customer": null,
+    "address": null,
+    "location": null,
+    "part_no": null,
+    "product_name": null
+  },
+  "doc_body": {
+    "d1": null,
+    "d2": null,
+    "d3": null,
+    "d4": null,
+    "d5": null,
+    "d6": null,
+    "d7": null
+  }
+}

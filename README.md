@@ -1,4 +1,4 @@
-# Pluggle v0.8 - alpha
+# Pluggle v0.85 - alpha
 
 Generic, plugin-based ETL & data sync engine. Fetches from a source transforms it, and
 loads it to a target — with the transform step designed to carry your own business
@@ -12,13 +12,16 @@ logic, not a fixed built-in one. Source and target types can be API, database, o
 ## Installation
 
 ```bash
-pip install -e ".[db,api,xml,cli,dev,docx,xlsx,pdf]"
+pip install -e .
 ```
 
-`pydantic`, `sqlalchemy`, `typer`, and `python-dotenv` are core dependencies. The
-optional groups above add support for specific source/target types — installing without
-a group and using its feature raises a clear `ModuleNotFoundError` naming the missing
-package.
+Every source/target type (file, DB, API) and every supported format (JSON, XML, CSV,
+HTML, DOCX, XLSX, PDF) is included — no optional extras to remember. Only `dev` (tests,
+linting) stays optional, for contributing to Pluggle itself:
+
+```bash
+pip install -e ".[dev]"
+```
 
 ## Configuration
 
@@ -87,15 +90,15 @@ from pluggle.enums import ContentFormat
 
 
 class TransformStrategyMyMapping:
-  def __init__(self, *, target_format: ContentFormat, data: TransformableData,
-               **kwargs):
-    self.target_format = target_format
-    self.data = data
+    def __init__(self, *, target_format: ContentFormat, data: TransformableData,
+                 **kwargs):
+        self.target_format = target_format
+        self.data = data
 
-  def transform(self) -> TransformedData:
-    # your logic here — data.content is canonical JSON (bytes)
-    ...
-    return TransformedData(content=...)
+    def transform(self) -> TransformedData:
+        # your logic here — data.content is canonical JSON (bytes)
+        ...
+        return TransformedData(content=...)
 ```
 
 A file must contain exactly one class matching that naming pattern.
@@ -104,6 +107,14 @@ Install it:
 
 ```bash
 pluggle install-strategy --path /path/to/my_strategy.py
+```
+
+Or install a reviewed strategy from the companion
+[pluggle-strategies](https://github.com/hsnwhte/pluggle-strategies)
+catalog by name, instead of a local path:
+
+```bash
+pluggle install-strategy --from-repo <name>
 ```
 
 This copies the file into Pluggle's `installed/` strategies folder and assigns it a
@@ -120,6 +131,12 @@ Uninstall with:
 pluggle uninstall-strategy --uid <uid>
 ```
 
+Or remove every installed strategy at once (asks for confirmation):
+
+```bash
+pluggle uninstall-strategy --all
+```
+
 `default` cannot be uninstalled. Don't edit the `installed/` folder by hand — use these
 commands so the strategy map always matches what's actually on disk.
 
@@ -130,11 +147,14 @@ commands so the strategy map always matches what's actually on disk.
   unflagged).
 - **No dependency management for installed strategies**: a Transform strategy installed
   via `install-strategy` may import third-party libraries not bundled with Pluggle. You
-  are responsible for installing any such dependencies yourself — Pluggle does not manage
-  them.
+  are responsible for installing any such dependencies yourself — Pluggle does not
+  manage them.
 - **Uninstalling a strategy breaks its lineage**: registry rows from past runs keep the
   strategy's uid, but once the file is removed that uid no longer resolves to anything.
   The recorded strategy class name remains as partial context.
+- **`--from-repo` doesn't deduplicate**: installing the same catalog strategy twice
+  produces two separate installs with different uids, rather than recognizing it's
+  already installed.
 
 ## Roadmap
 

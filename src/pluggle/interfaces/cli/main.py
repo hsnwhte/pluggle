@@ -184,40 +184,90 @@ def inspect(
 
 @app.command(name="install-strategy")
 def install_strategy(
-    strategy_path: Path = typer.Option(
-        ...,
-        "--path",
+    path: Path = typer.Option(
+        None,
+        "--from-path",
         "-p",
         help="Full path to the Transform strategy .py file. Use an absolute path to avoid ambiguity.",
     ),
+    repo: str = typer.Option(
+        None,
+        "--from-repo",
+        "-r",
+        help="Install a strategy by name from the curated pluggle-strategies "
+        "catalog (github.com/hsnwhte/pluggle-strategies), instead of "
+        "--path. See catalog.json in that repo for available names.",
+    ),
 ):
-    """Install a Transform strategy from a local .py file."""
+    """Install a Transform strategy from either the standard catalog repo or
+    a local .py file. Defaults to the standard repo."""
+    if not path and not repo:
+        logger.error(
+            "Strategy install failed: No catalogued strategy name or local path provided."
+        )
+        typer.echo(
+            "Install failed: You must provide either a catalogued strategy name or a local path."
+        )
+        raise typer.Exit(code=1)
+    if path and repo:
+        logger.warning(
+            "Strategy install argument overflow: Defaulting to install from repo."
+        )
+        typer.echo("Install argument overflow: Defaulting to install from repo.")
+        kwargs = {"repo_name": repo}
+    elif repo:
+        logger.info(f"Installing strategy from repo: {repo}")
+        kwargs = {"repo_name": repo}
+    else:
+        logger.info(f"Installing strategy from local path {path}")
+        kwargs = {"strategy_path": path}
+
     try:
-        new_uid = transform_installer.install_strategy(strategy_path=strategy_path)
+        new_uid, doc_url = transform_installer.install_strategy(**kwargs)
+        typer.echo(f"Strategy installed successfully with uid: {new_uid}")
+
     except errors.PluggleError as e:
         logger.error(f"Strategy install failed: {e}")
         typer.echo(f"Install failed: {e}", err=True)
         raise typer.Exit(code=1)
-    typer.echo(f"Strategy installed successfully with uid: {new_uid}")
 
 
 @app.command(name="uninstall-strategy")
 def uninstall_strategy(
     uid: str = typer.Option(
-        ...,
+        None,
         "--uid",
         "-u",
         help="UID of the installed strategy to remove (see 'pluggle show --mode strategies').",
     ),
+    all_strategies: bool = typer.Option(
+        False, "--all", "-a", help="Uninstall every installed strategy."
+    ),
 ):
-    """Remove an installed Transform strategy by its UID."""
+    """Removes one or all installed Transform strategy/strategies."""
+    if not uid and not all_strategies:
+        typer.echo("You must provide either --uid or --all.")
+        raise typer.Exit(code=1)
+    if all_strategies:
+        confirmed = typer.confirm("This will uninstall all strategies. Continue?")
+        if not confirmed:
+            typer.echo("Cancelled.")
+            raise typer.Exit()
+        try:
+            transform_installer.uninstall_all()
+        except errors.TransformError as e:
+            logger.error(f"Strategy uninstall failed: {e}")
+            typer.echo(f"Uninstall failed: {e}", err=True)
+            raise typer.Exit(code=1)
+        typer.echo("All strategies uninstalled successfully.")
+        return
     try:
         transform_installer.uninstall_strategy(uid=uid)
+        typer.echo(f"Strategy {uid} uninstalled successfully.")
     except errors.PluggleError as e:
         logger.error(f"Strategy uninstall failed: {e}")
         typer.echo(f"Uninstall failed: {e}", err=True)
         raise typer.Exit(code=1)
-    typer.echo(f"Strategy {uid} uninstalled successfully.")
 
 
 @app.command(name="version")

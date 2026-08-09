@@ -860,3 +860,128 @@ passing.
 
 **Status:** v0.8 complete — error handling audit, logging decision, CI pipeline, and
 (unplanned but necessary) this SQLite concurrency fix.
+
+### 📅 2026-08-08, Saturday
+
+**14:26** | *[RESOLVE]*
+**First real Transform strategy written and working: 8D Excel mapper**
+
+Wrote the first entry for the `pluggle-strategies` catalog — a Transform strategy that
+maps a specific 8D Problem Solving Excel template (LearnLeanSigma's free template) into
+structured JSON, ready for DB loading. This is also the first genuine end-to-end proof
+that Pluggle works on real-world input rather than test fixtures.
+
+**What the strategy does:** reads the raw
+`{zip_member_path: parsed_xml}` dict that `XlsxExtractStrategy`
+produces, pulls values from known cell coordinates on one sheet, and assembles them into
+a nested Pydantic model tree (`Document` →
+`DocMeta`/`Definitions`/`DocBody` → `D1`–`D7`).
+
+**Technical obstacles solved along the way**, none of which were obvious from the
+outside:
+
+- **Shared strings indirection.** Text cells don't hold their text — they hold an
+  integer index into `xl/sharedStrings.xml`. Cells carry
+  `@t="s"` when this applies; without `@t`, the `v` value is the real (numeric) content.
+  Excel omits `@t` for numbers rather than writing
+  `@t="n"`, which cost some debugging time.
+- **`xml:space="preserve"`.** Some shared-string entries parse as a plain string, others
+  as `{"@xml:space": "preserve", "#text": "..."}`
+  depending on whether Excel decided whitespace mattered. Needed a resolver that handles
+  both shapes.
+- **Excel serial dates.** Dates are stored as day counts from 1899-12-30 — not
+  1900-01-01, because Excel deliberately preserves a Lotus 1-2-3 bug treating 1900 as a
+  leap year. Verified the conversion by round-tripping a known date (2026-08-08 → 46242,
+  matching the raw value in the file).
+- **Date serialization.** Kept `date` types on the models (so Pydantic still validates
+  them) and used `model_dump(mode="json")` rather than downgrading the fields to `str` —
+  Pydantic handles ISO conversion at dump time.
+- **Checkboxes.** The hardest part. Checkbox state lives in
+  `xl/ctrlProps/ctrlPropsN.xml`, entirely outside the cell grid; a checked box gets
+  `@checked="Checked"`, an unchecked one simply omits the attribute (so it's a presence
+  check, not a value comparison). Mapping *which* file belongs to *which* checkbox
+  required following
+  `drawing1.xml` → `r:id` → `drawing1.xml.rels` → actual target path. Since this
+  strategy is template-specific anyway, hardcoded the resulting mapping as a
+  `CHECKBOXES` dict rather than resolving the relationship chain at runtime.
+
+**Generic model builder.** `_build_model(model: type[M]) -> M` fills any of the Pydantic
+models by iterating `model_fields` and looking each field name up in `COORDS`/
+`CHECKBOXES`. Used a `TypeVar` bound to `BaseModel` so the return type tracks
+
+### 📅 2026-08-08, Saturday
+
+**12:26** | *[MILESTONE — v0.8.0 → v0.85.0]*
+**v0.85 complete: pluggle-strategies repo, `--from-repo`, first real strategy**
+
+**`pluggle-strategies` repo created and populated.** MIT-licensed,
+`catalog.json` (machine-readable: name → file/summary/hints),
+`.md` alongside each `.py` (human-readable: usage, source attribution, known
+limitations). First entry: an 8D Excel mapper built against Learn Lean Sigma's free 8D
+Problem Solving template — the first proof that Pluggle handles a real-world file, not
+just test fixtures. Full writeup of the debugging (shared strings, Excel serial dates,
+checkbox extraction via ctrlProps) is in the previous entry.
+
+**`--from-repo` implemented.** `install-strategy` now accepts
+`--from-path` or `--from-repo <name>`, mutually exclusive in intent (both given → warns
+and prefers repo). Fetches `catalog.json` from
+`raw.githubusercontent.com`, resolves the entry, downloads the `.py`
+to a temp path, then runs through the exact same
+`_load_strategy_from_file` + copy-to-`installed/` path as a local install — no
+duplicated logic. Since `.md` files share the `.py`'s basename by convention, the docs
+link is derived rather than stored as a separate catalog field. Success message prints
+the doc URL alongside the new UID.
+
+**`uninstall-strategy --all` added**, with a confirmation prompt before removing
+everything. Lives in `transform_installer.py` as
+`uninstall_all()`, reusing `uninstall_strategy()` per file rather than duplicating
+removal logic — consistent with the CLI-stays-thin, installer-does-the-work split
+established earlier.
+
+**Revisited transform strategy identity, decided not to change it.**
+Two open questions surfaced from using `--from-repo`:
+
+1. Installing the same repo strategy twice produces two different UIDs (no dedup) —
+   because UID assignment is random per install, not content-derived.
+2. Uninstalling a strategy still discards its lineage — a UID in old registry rows
+   resolves to nothing once the file is gone (documented limitation since v0.75).
+
+Considered switching the installed filename from a random UID to a content hash (would
+give dedup "for free" — same content, same filename, second install is a no-op).
+Considered a database-backed
+`InstalledStrategies` table so uninstalled strategies stay resolvable. Decided against
+both for now: hash-as-identity conflates two different questions (lineage vs.
+deduplication) that don't need one answer, and a persistence table adds a fifth store, a
+new `UnitOfWork` dependency, and turns install/uninstall from filesystem-only to
+DB-and-filesystem — real cost for a single-user, pre-Beta project with no reported need.
+Filesystem stays the sole source of truth. Revisit if Beta feedback actually surfaces
+this as a problem, not before.
+
+**Collapsed optional dependency groups into core dependencies**
+Discovered while wiring up `httpx` for `--from-repo` that it needed to move from the
+`api` optional group to core — installing a strategy from the catalog is a base CLI
+feature, not something gated behind an extra. That prompted a wider look: `docx`/`xlsx`
+groups depend on
+`xmltodict` (their Extract strategies parse the internal zip's XML members) but that
+dependency lived in the separate `xml` group, undeclared as a sub-dependency —
+installing `pluggle[docx]` alone wouldn't have pulled in what DOCX Extract actually
+needs.
+
+Rather than start declaring inter-group dependencies, checked the actual cost of just
+merging everything: roughly 20-25MB total (lxml is the heaviest single piece, being a
+compiled C library). At current bandwidth that's a few seconds, not a real UX cost.
+Moved
+`httpx`, `psycopg2-binary`, `lxml`, `xmltodict`, `python-docx`,
+`openpyxl`, `pypdf` all into core `dependencies`. Only `dev` stays optional now (pytest,
+ruff — nothing an end user needs).
+
+Net effect: `pip install pluggle` now gives every format/source supported out of the
+box, matching the "batteries included" instinct that already drove making tables
+auto-create and `.env` optional. The isolated-install verification from v0.8 (fresh
+venv, missing
+`httpx` → clear `ModuleNotFoundError`) is no longer the relevant test — there's no
+meaningful "isolated" install to verify anymore, by design.
+
+**Status:** v0.85 complete.
+
+

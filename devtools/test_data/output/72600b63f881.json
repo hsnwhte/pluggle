@@ -1,0 +1,33 @@
+{
+  "doc_meta": {
+    "title": "8D Problem Solving",
+    "no": "0",
+    "date_open": null,
+    "internal": false,
+    "external": false,
+    "customer_complaint_no": null,
+    "initial_response": null,
+    "target_close_date": null,
+    "revision_dates": null,
+    "actual_close_date": null,
+    "initiator": null,
+    "initiator_spvr": null
+  },
+  "definitions": {
+    "title": "Who is Impacted by the Problem?",
+    "customer": null,
+    "address": null,
+    "location": null,
+    "part_no": null,
+    "product_name": null
+  },
+  "doc_body": {
+    "d1": null,
+    "d2": null,
+    "d3": null,
+    "d4": null,
+    "d5": null,
+    "d6": null,
+    "d7": null
+  }
+}
