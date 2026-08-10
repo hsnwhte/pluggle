@@ -12,14 +12,17 @@ logic, not a fixed built-in one. Source and target types can be API, database, o
 ## 1. Installation
 
 ```bash
-pip install -e .
+pip install pluggle
 ```
 
 Every source/target type (file, DB, API) and every supported format (JSON, XML, CSV,
-HTML, DOCX, XLSX, PDF) is included — no optional extras to remember. Only `dev` (tests,
-linting) stays optional, for contributing to Pluggle itself:
+HTML, DOCX, XLSX, PDF) is included — no optional extras to remember.
+
+For contributing to Pluggle itself (running the test suite, linting):
 
 ```bash
+git clone https://github.com/hsnwhte/pluggle.git
+cd pluggle
 pip install -e ".[dev]"
 ```
 
