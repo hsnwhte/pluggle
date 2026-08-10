@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/hsnwhte/pluggle/main/assets/banner-reverse.svg">
+  <img src="https://raw.githubusercontent.com/hsnwhte/pluggle/main/assets/banner.svg" width="480" alt="Pluggle">
+</picture>
+
 # Pluggle v0.9.0 - beta
 
 Generic, plugin-based ETL & data sync engine. Fetches from a source transforms it, and
