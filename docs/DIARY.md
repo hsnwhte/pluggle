@@ -177,8 +177,8 @@ project, because:
 
 Deferred design sketch, to revisit in v1.x:
 
-- A `strategy_installer.py` devtool that registers a strategy (name, source — built-in
-  vs. installed, maybe file path or package origin)
+- A `strategy_manager.py` devtool that registers a strategy (name, source — built-in vs.
+  installed, maybe file path or package origin)
   into a small catalog (a dedicated table or a structured config file)
 - A `settings`/`.env` distinction between built-in and installed strategy locations
 - Only becomes necessary once there's a real second author of Transform strategies — not
@@ -933,7 +933,7 @@ link is derived rather than stored as a separate catalog field. Success message 
 the doc URL alongside the new UID.
 
 **`uninstall-strategy --all` added**, with a confirmation prompt before removing
-everything. Lives in `transform_installer.py` as
+everything. Lives in `strategy_manager.py` as
 `uninstall_all()`, reusing `uninstall_strategy()` per file rather than duplicating
 removal logic — consistent with the CLI-stays-thin, installer-does-the-work split
 established earlier.
@@ -995,3 +995,132 @@ format in v0.7, and error message shape was tightened during the v0.8 audit
 FetchCacheNotFoundError's hierarchy move). Decided a formal end-to-end pass on either
 would delay Beta for marginal additional confidence. Documented as a deliberate skip
 rather than silently dropped.
+
+### 📅 2026-08-17, Monday
+
+**10:41** | *[REFACTORING]*
+**Strategy identity switched from generated uid to declared name + version**
+
+Replaced the random 12-char uid with metadata the strategy declares about itself,
+PyPI-style. Every Transform strategy now carries a
+`meta = StrategyMeta(name=..., version=...)` class attribute; the filename it gets
+installed under is derived from that (`installed/{name}_{version}.py`), and the same
+pair becomes its key in
+`TRANSFORM_STRATEGY_MAP` and its record in the registry.
+
+**Why the change.** Uids solved uniqueness but nothing else: two installs of the same
+strategy produced two unrelated ids, and a name seen in `show --mode strategies` told
+the user nothing about which version they were running. Declaring identity in the code —
+rather than generating it at install time or inferring it from a filename — means the
+source file is the single authority, and the installer just honours it.
+
+**Decisions made along the way:**
+
+- **`StrategyMeta` is a Pydantic model, not a plain class or dict** — validation comes
+  for free, and `install_strategy` can reject bad metadata before copying anything into
+  `installed/`.
+- **Invalid names are rejected, not normalised.** A validator enforces
+  `lowercase-with-single-hyphens`; silently rewriting `My Strategy` into
+  `my-strategy` would mean the installed identity differs from what the author declared.
+  Since Pydantic validators must raise `ValueError`,
+  `install_strategy` catches `ValidationError` and re-raises it as a Pluggle error.
+- **Version format fixed at `vX.Y`**, no patch component — deliberately minimal.
+- **Versions coexist.** `foo v1.0` and `foo v2.0` can both be installed; the map key is
+  the pair. Asking for a bare name resolves to the highest version, compared numerically
+  rather than as strings so that
+  `v1.10` sorts above `v1.9`. Same name *and* version is a conflict and is refused.
+- **`default.py` stays outside `installed/`.** Considered moving it in so that name
+  conflicts would be caught by plain file existence, but that makes the built-in
+  deletable and requires guards in both `uninstall`
+  and `uninstall_all` — two places to forget, with a worse failure mode than the one it
+  prevents. It's a reserved name instead.
+
+**Protocol change forced a check rewrite.** Adding `meta` to
+`TransformStrategyProtocol` broke `issubclass()`, which Python refuses on protocols with
+non-method members. `isinstance()` isn't an option either, since
+`_load_strategy_from_file` works with the class before any instance exists. Replaced
+with explicit `hasattr` checks for `transform`
+and `meta`.
+
+**Devtools / runtime store confusion, finally resolved.** Since v0.85 the Orchestrator
+builds its own `UnitOfWork` and reads
+`pluggle.settings.RUNTIME_STORE`, so devtools can no longer inject its own engine. The
+intended fix — devtools setting `PLUGGLE_STORE_ADDRESS`
+before importing pluggle — was in place but *below* the pluggle imports, so it never
+took effect: `settings.py` had already computed
+`RUNTIME_STORE`. Result was that `setup-test-env` prepared PostgreSQL while test runs
+quietly wrote to a stale SQLite file with the old schema. Moved the assignment above the
+imports.
+
+That in turn broke `reset-runtime-db`, whose whole purpose was reaching the *real*
+runtime store — it was now pointing at the devtools database like everything else. It
+now takes `--env dev|real`, with
+`REAL_RUNTIME_STORE` captured in `devtools/settings.py` (which loads
+`.env` itself and is imported before the override happens).
+
+Also pointed `DEV_SOURCE_DB_URL`/`DEV_TARGET_DB_URL` at the same PostgreSQL instance as
+the runtime store. They were still SQLite paths under `devtools/databases/`, a directory
+that no longer existed after the move to Linux — which surfaced as a misleading
+`LoadTableNotFoundError` wrapping a plain "unable to open database file".
+
+**Touched:** `StrategyMeta` in dto, `TransformStrategyProtocol`,
+`transform_installer`, `strategies/transform/__init__.py`,
+`RegistryEntry` + `RegistryRecord` (uid column renamed), `backend`,
+`backend_protocols`, `orchestrator`, `InputArgs`, both CLIs,
+`devtools/settings`, `catalog.json` and the 8D strategy in pluggle-strategies.
+
+**Testing:** full pytest suite green after a schema reset; strategy install/uninstall
+and an end-to-end devtools run verified by hand.
+
+**13:42** | *[REFACTORING v0.9.0 -> 0.10.0]*
+**Programmatic API added; strategy installer split into single-purpose functions**
+
+Added `pluggle/interfaces/api.py` — a Python-level interface for other applications to
+call, sitting alongside the CLI rather than under it. Both are thin shells over
+`strategy_manager`; neither owns logic the other duplicates. Returns plain Python
+objects, not JSON: the caller is in-process (the upcoming `pluggle-api` FastAPI app),
+and serialising there would only mean FastAPI parsing it back again. Anything crossing a
+real process boundary is that layer's job, not this one's.
+
+Exposes: listing catalog strategies, listing installed ones, installing from repo or
+path, installing everything from the catalog, uninstalling one or all. Errors propagate
+untouched — the caller decides what an HTTP status or a log line should be; only the
+CLI, as the last layer, catches and formats them.
+
+**`transform_installer` renamed to `strategy_manager`.** It manages installs the way a
+package manager does; the old name described only one of its verbs. The `transform` part
+of the name was redundant anyway, since the module lives under `strategies/transform/`.
+
+**Split `install_strategy` into `install_from_path` and
+`install_from_repo`.** The single function took two optional arguments where exactly one
+had to be set — the signature couldn't express that, so it was enforced at runtime.
+Separate functions say it in the signature instead, and their return types differ
+honestly (repo installs also yield a docs URL). Combining them is now the caller's
+business, and the CLI does it with a couple of branches. Shared work — load, derive
+name, check for conflict, copy — sits in one private helper.
+
+**`install_all_from_repo` added**, fetching the catalog once and iterating rather than
+hitting the network per strategy. Already-present strategies are skipped and counted
+rather than raising: the single-item function stays strict, the bulk one tolerant.
+`install-strategy --all`
+in the CLI, since the API having a capability the CLI lacks would be a gap users would
+notice.
+
+Deliberately skipped `install_all_from_dir` — the symmetry is tempting but there's no
+scenario for it yet.
+
+**Map keys now come from `meta`, not filenames.** `TRANSFORM_STRATEGY_MAP`
+builds its keys as `{meta.name}_{meta.version}` for both the built-in and the installed
+strategies, so a file renamed by hand can't put a wrong key in the map. `default`
+declares `name="default", version="v1.0"` like any other, which removed its special
+case: bare-name resolution to the highest version now applies to it too. Filenames stay
+as a convention — they're what makes conflict detection a plain `exists()` check,
+keeping the filesystem the single source of truth.
+
+**Bugs found while wiring this up:** `_fetch_strategy_from_repo` was being called
+without the `catalog_entries` argument it had just gained; the protocol check read
+`hasattr(...) + hasattr(...)`, which sums to 2 and only fails when *both* are missing;
+the conflict check had gone missing entirely, so a reinstall silently overwrote; an
+error message used `__class__.__name__` on a class, which prints `type`. Also a stale
+`catalog.json` whose `file` paths dropped the `strategies/` prefix, producing 404s on
+install.

@@ -1,10 +1,12 @@
 import json
 
 from pluggle.enums import ContentFormat
-from pluggle.models.dto import TransformableData, TransformedData
+from pluggle.models.dto import StrategyMeta, TransformableData, TransformedData
 
 
 class TransformStrategyForSampleCommentsJson:
+    meta = StrategyMeta(name="strategy-for-sample-comments-json", version="v1.0")
+
     def __init__(
         self, *, target_format: ContentFormat, data: TransformableData, **kwargs
     ):

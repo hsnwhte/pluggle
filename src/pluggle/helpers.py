@@ -1,19 +1,8 @@
 import hashlib
-from uuid import uuid4
 
 from pluggle.enums import ContentFormat, MimeType
 from pluggle.exceptions import errors
 from pluggle.models.dto import ExtractableData
-
-
-def generate_strategy_uid() -> str:
-    """Return a 12-character identifier for an installed strategy.
-
-    UUID4 rather than UUID7: truncating UUID7 would keep only its
-    timestamp prefix and discard all randomness, making collisions
-    certain within the same millisecond.
-    """
-    return uuid4().hex[:12]
 
 
 def to_extractable(

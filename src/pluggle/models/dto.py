@@ -1,9 +1,32 @@
+import re
 from datetime import datetime
 from pathlib import Path
 
-from pydantic import BaseModel, computed_field, model_validator
+from pydantic import BaseModel, computed_field, field_validator, model_validator
 
-from pluggle.enums import ContentFormat, PluggleIOType, Phase, RunStatus
+from pluggle.enums import ContentFormat, Phase, PluggleIOType, RunStatus
+
+
+class StrategyMeta(BaseModel):
+    name: str
+    version: str
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        if not re.fullmatch(r"[a-z0-9]+(-[a-z0-9]+)*", v):
+            raise ValueError(
+                f"Invalid strategy name '{v}'. Use lowercase letters, digits "
+                f"and single hyphens between segments."
+            )
+        return v
+
+    @field_validator("version")
+    @classmethod
+    def validate_version(cls, v: str) -> str:
+        if not re.fullmatch(r"v\d+\.\d+", v):
+            raise ValueError(f"Invalid version '{v}'. Expected format: vX.Y")
+        return v
 
 
 class InputArgs(BaseModel):
@@ -11,7 +34,7 @@ class InputArgs(BaseModel):
     source_type: PluggleIOType
     source_address: str
     source_table: str | None
-    transform_strategy_uid: str = "default"
+    transform_strategy_name: str = "default_v1.0"
     target_type: PluggleIOType
     target_address: str
     target_table: str | None
@@ -81,7 +104,7 @@ class RegistryRecord(BaseModel):
     run_id: int
     phase: Phase
     content_format: ContentFormat
-    transform_strategy_uid: str | None
+    transform_strategy_name: str | None
     strategy_name: str
     content_hash: str
     address: str

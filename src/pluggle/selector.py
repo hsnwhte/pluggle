@@ -20,6 +20,7 @@ class Selector:
     maps, so adding a format or IO type means registering a class rather
     than touching pipeline code.
     """
+
     @staticmethod
     def get_fetch_strategy(source_type: PluggleIOType) -> FetchStrategyProtocol:
         smap = fetch.FETCH_STRATEGY_MAP

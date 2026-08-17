@@ -42,7 +42,7 @@ class RegistryStoreProtocol(Protocol):
         run_id: int,
         phase: Phase,
         content_format: ContentFormat,
-        tranfsorm_strategy_uid: str | None,
+        transform_strategy_name: str | None,
         strategy_name: str,
         content_hash: str,
         address: str,

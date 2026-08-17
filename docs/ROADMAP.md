@@ -96,5 +96,18 @@ commands) — private/self-explanatory methods skipped by design
 [x] Every raised exception uses the custom hierarchy (grep for bare "raise Exception" /
 "raise ValueError" returns nothing)
 
+v0.10 [DONE] -- Breaking change. Strategy identity switched from a generated uid to
+name + version declared by the strategy itself in a `StrategyMeta` class attribute.
+Previously installed strategies and existing registry rows are not compatible:
+strategies must be reinstalled and the runtime store reset. Versions of the same
+strategy can coexist; a bare name resolves to the highest. Programmatic API added
+(`pluggle/interfaces/api.py`) for other applications to call in-process, alongside the
+CLI. `transform_installer` renamed to
+`strategy_manager` and its install function split into `install_from_path` /
+`install_from_repo`, plus `install_all_from_repo` (exposed as
+`install-strategy --all`). Devtools runtime store override fixed — it sat below the
+pluggle imports and never took effect, so test runs wrote to a stale SQLite file while
+`setup-test-env` prepared PostgreSQL.
+
 v1.0 -- Full release: portfolio-ready. Documented, tested, demonstrably extensible.
 Public-facing polish complete.
