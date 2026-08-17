@@ -14,7 +14,7 @@ from pluggle.exceptions import errors
 from pluggle.logging_config import setup_logging
 from pluggle.models.dto import InputArgs
 from pluggle.orchestrator import Orchestrator
-from pluggle.strategies.transform import TRANSFORM_STRATEGY_MAP, strategy_installer
+from pluggle.strategies.transform import TRANSFORM_STRATEGY_MAP, strategy_manager
 from pluggle.unit_of_work import UnitOfWork
 
 logger = logging.getLogger(__name__)
@@ -186,6 +186,12 @@ def inspect(
 
 @app.command(name="install-strategy")
 def install_strategy(
+    install_all: bool = typer.Option(
+        False,
+        "--all",
+        "-a",
+        help="Install every strategy from the pluggle-strategies catalog.",
+    ),
     path: Path = typer.Option(
         None,
         "--from-path",
@@ -203,7 +209,7 @@ def install_strategy(
 ):
     """Install a Transform strategy from either the standard catalog repo or
     a local .py file. Defaults to the standard repo."""
-    if not path and not repo:
+    if not path and not repo and not install_all:
         logger.error(
             "Strategy install failed: No catalogued strategy name or local path provided."
         )
@@ -211,23 +217,36 @@ def install_strategy(
             "Install failed: You must provide either a catalogued strategy name or a local path."
         )
         raise typer.Exit(code=1)
-    if path and repo:
-        logger.warning(
-            "Strategy install argument overflow: Defaulting to install from repo."
-        )
-        typer.echo("Install argument overflow: Defaulting to install from repo.")
-        kwargs = {"repo_name": repo}
-    elif repo:
-        logger.info(f"Installing strategy from repo: {repo}")
-        kwargs = {"repo_name": repo}
-    else:
-        logger.info(f"Installing strategy from local path {path}")
-        kwargs = {"strategy_path": path}
-
     try:
-        new_name, doc_url = strategy_installer.install_strategy(**kwargs)
-        typer.echo(f"Strategy installed successfully with name: {new_name}")
+        if install_all:
+            confirmed = typer.confirm("This will uninstall all strategies. Continue?")
+            if not confirmed:
+                typer.echo("Cancelled.")
+                raise typer.Exit()
+            logger.info("Installing all strategies in pluggle-strategies repo")
+            total, skipped = strategy_manager.install_all_in_repo()
+            typer.echo(
+                f"Total: {total}\n"
+                f"Installed: {total - skipped}\n"
+                f"Skipped: {skipped} (already present)"
+            )
 
+        if path and repo:
+            logger.warning(
+                "Strategy install argument overflow: Defaulting to install from repo."
+            )
+            typer.echo("Install argument overflow: Defaulting to install from repo.")
+        if repo:
+            logger.info(f"Installing strategy from repo: {repo}")
+            new_name, doc_url = strategy_manager.install_from_repo(repo_name=repo)
+            typer.echo(
+                f"Strategy installed successfully with name: {new_name}\n"
+                f"See '{doc_url}' for strategy details."
+            )
+        if path and not repo:
+            logger.info(f"Installing strategy from local path {path}")
+            new_name = strategy_manager.install_from_path(file_path=path)
+            typer.echo(f"Strategy installed successfully with name: {new_name}")
     except errors.PluggleError as e:
         logger.error(f"Strategy install failed: {e}")
         typer.echo(f"Install failed: {e}", err=True)
@@ -256,7 +275,7 @@ def uninstall_strategy(
             typer.echo("Cancelled.")
             raise typer.Exit()
         try:
-            strategy_installer.uninstall_all()
+            strategy_manager.uninstall_all()
         except errors.TransformError as e:
             logger.error(f"Strategy uninstall failed: {e}")
             typer.echo(f"Uninstall failed: {e}", err=True)
@@ -264,7 +283,7 @@ def uninstall_strategy(
         typer.echo("All strategies uninstalled successfully.")
         return
     try:
-        strategy_installer.uninstall_strategy(strategy_name=name)
+        strategy_manager.uninstall_strategy(strategy_name=name)
         typer.echo(f"Strategy {name} uninstalled successfully.")
     except errors.PluggleError as e:
         logger.error(f"Strategy uninstall failed: {e}")

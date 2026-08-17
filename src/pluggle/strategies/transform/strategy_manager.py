@@ -17,24 +17,51 @@ INSTALLED_DIR = Path(__file__).resolve().parent / "installed"
 INSTALLED_DIR.mkdir(exist_ok=True)
 
 
-def install_strategy(
-    *, strategy_path: Path | None = None, repo_name: str | None = None
-) -> tuple[str, str | None]:
-    doc_url = None
-    if not strategy_path and not repo_name:
-        raise errors.StrategySetupError(
-            "No argument is provided. Expected: 'strategy_path' OR 'repo_name'"
-        )
-    if repo_name is not None:
-        strategy_path, doc_url = _fetch_strategy_from_repo(repo_name=repo_name)
-
-    strategy = _load_strategy_from_file(file_path=strategy_path)
+def install_from_path(*, file_path: Path) -> str:
+    strategy = _load_strategy_from_file(file_path=file_path)
     strategy_name = strategy.meta.name + "_" + strategy.meta.version
-
     destination = INSTALLED_DIR / f"{strategy_name}.py"
-    shutil.copy(strategy_path, destination)
+    if destination.exists():
+        raise errors.StrategySetupError(
+            f"A strategy with name '{strategy_name}' already exists."
+        )
+    shutil.copy(file_path, destination)
 
-    return strategy_name, doc_url
+    return strategy_name
+
+
+def install_from_repo(*, repo_name: str) -> tuple[str, str]:
+    catalog_entries = get_repo_catalog()
+    try:
+        fetched_strategy_path, doc_url = _fetch_strategy_from_repo(
+            catalog_entries=catalog_entries, strategy_name=repo_name
+        )
+    except errors.StrategyNotFoundError:
+        raise
+    try:
+        strategy_name = install_from_path(file_path=fetched_strategy_path)
+        return strategy_name, doc_url
+    except errors.StrategySetupError:
+        raise
+
+
+def install_all_in_repo() -> tuple:
+    catalog_entries = get_repo_catalog()
+    result = []
+    total = len(catalog_entries.keys())
+    skipped = 0
+    for entry in catalog_entries:
+        destination = INSTALLED_DIR / f"{entry}.py"
+        if destination.exists():
+            skipped += 1
+            continue
+
+        fetched_strategy_path, doc_url = _fetch_strategy_from_repo(
+            catalog_entries=catalog_entries, strategy_name=entry
+        )
+        strategy_name = install_from_path(file_path=fetched_strategy_path)
+        result.append((strategy_name, doc_url))
+    return total, skipped
 
 
 def uninstall_strategy(*, strategy_name: str) -> None:
@@ -43,21 +70,18 @@ def uninstall_strategy(*, strategy_name: str) -> None:
         raise errors.StrategyNotFoundError(
             f"No installed strategy with name '{strategy_name}'."
         )
-
     target.unlink()
 
 
 def uninstall_all() -> None:
-    print(INSTALLED_DIR)
     names = [f.stem for f in INSTALLED_DIR.glob("*.py")]
-    print(names)
     if not names:
         raise errors.StrategyNotFoundError("No installed strategies to remove.")
     for name in names:
         uninstall_strategy(strategy_name=name)
 
 
-def _fetch_strategy_from_repo(*, repo_name: str) -> tuple[Path, str | None]:
+def get_repo_catalog() -> dict:
     try:
         catalog_response = httpx.get(CATALOG_URL, timeout=10.0)
         catalog_response.raise_for_status()
@@ -67,10 +91,16 @@ def _fetch_strategy_from_repo(*, repo_name: str) -> tuple[Path, str | None]:
         ) from e
 
     catalog = catalog_response.json()
-    entry = catalog.get("strategies", {}).get(repo_name)
+    return catalog.get("strategies", {})
+
+
+def _fetch_strategy_from_repo(
+    *, catalog_entries: dict, strategy_name: str
+) -> tuple[Path, str]:
+    entry = catalog_entries.get(strategy_name)
     if entry is None:
         raise errors.StrategyNotFoundError(
-            f"No strategy named '{repo_name}' found in the catalog"
+            f"No strategy named '{strategy_name}' found in the catalog"
         )
 
     file_url = RAW_BASE + entry["file"]
@@ -82,7 +112,7 @@ def _fetch_strategy_from_repo(*, repo_name: str) -> tuple[Path, str | None]:
             f"Could not download strategy file: {e}"
         ) from e
 
-    temp_path = Path(tempfile.gettempdir()) / f"{repo_name}.py"
+    temp_path = Path(tempfile.gettempdir()) / f"{strategy_name}.py"
     temp_path.write_bytes(file_response.content)
 
     doc_path = entry["file"].rsplit(".", 1)[0] + ".md"
@@ -122,9 +152,8 @@ def _load_strategy_from_file(*, file_path: Path) -> type[TransformStrategyProtoc
             f" {matches}. Exactly one is required."
         )
     strategy_class = getattr(module, matches[0])
-    if not hasattr(strategy_class, "transform") + hasattr(strategy_class, "meta"):
+    if not hasattr(strategy_class, "transform") and not hasattr(strategy_class, "meta"):
         raise errors.StrategyNotFoundError(
-            f"{strategy_class.__class__.__name__} does not implement "
-            f"TransformStrategyProtocol"
+            f"{strategy_class.__name__} does not implement TransformStrategyProtocol"
         )
     return strategy_class
