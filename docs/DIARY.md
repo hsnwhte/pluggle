@@ -933,7 +933,7 @@ link is derived rather than stored as a separate catalog field. Success message 
 the doc URL alongside the new UID.
 
 **`uninstall-strategy --all` added**, with a confirmation prompt before removing
-everything. Lives in `transform_installer.py` as
+everything. Lives in `strategy_installer.py` as
 `uninstall_all()`, reusing `uninstall_strategy()` per file rather than duplicating
 removal logic — consistent with the CLI-stays-thin, installer-does-the-work split
 established earlier.

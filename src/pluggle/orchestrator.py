@@ -103,7 +103,7 @@ class Orchestrator:
 
             current_phase = Phase.TRANSFORM
             logger.info(
-                f"Transforming data based on strategy: '{self.input_args.transform_strategy_uid}'"
+                f"Transforming data based on strategy: '{self.input_args.transform_strategy_name}'"
             )
             last_entry_id = self._transform(run_id, last_entry_id)
             logger.info(
@@ -170,7 +170,7 @@ class Orchestrator:
             run_id=run_id,
             phase=Phase.EXPORT,
             content_format=self.input_args.target_format,
-            transform_strategy_uid=self.input_args.transform_strategy_uid,
+            transform_strategy_name=self.input_args.transform_strategy_name,
             strategy_name=export_strategy.__name__,
             content_hash=helpers.generate_hash(content=content_bytes),
             address=str(self.input_args.target_address),
@@ -233,7 +233,7 @@ class Orchestrator:
         )
 
         transform_strategy_class = selector.get_transform_strategy(
-            self.input_args.transform_strategy_uid,
+            self.input_args.transform_strategy_name,
         )
         transform_strategy = transform_strategy_class(
             target_format=self.input_args.target_format, data=transformable_content
@@ -250,7 +250,7 @@ class Orchestrator:
             run_id=run_id,
             phase=Phase.TRANSFORM,
             content_format=self.input_args.target_format,
-            transform_strategy_uid=self.input_args.transform_strategy_uid,
+            transform_strategy_name=self.input_args.transform_strategy_name,
             strategy_name=transform_strategy.__class__.__name__,
             content_hash=helpers.generate_hash(content=data.content),
             address=str(payload_address),

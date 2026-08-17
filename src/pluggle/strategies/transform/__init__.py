@@ -2,16 +2,16 @@ from pathlib import Path
 
 from pluggle.strategies.protocols import TransformStrategyProtocol
 from pluggle.strategies.transform.default import TransformStrategySamplePassthrough
-from pluggle.strategies.transform.transform_installer import _load_strategy_from_file
+from pluggle.strategies.transform.strategy_installer import _load_strategy_from_file
 
 TRANSFORM_STRATEGY_MAP: dict[str, type[TransformStrategyProtocol]] = {
-    "default": TransformStrategySamplePassthrough,  # constant, not to be erased
+    "default_v1.0": TransformStrategySamplePassthrough,  # constant, not to be erased
 }
 
-_installed_dir = Path(__file__).resolve().parent / "installed"
-_installed_dir.mkdir(exist_ok=True)
+INSTALLED_DIR = Path(__file__).resolve().parent / "installed"
+INSTALLED_DIR.mkdir(exist_ok=True)
 
-for file_path in sorted(_installed_dir.glob("*.py")):
+for file_path in sorted(INSTALLED_DIR.glob("*.py")):
     TRANSFORM_STRATEGY_MAP[file_path.stem] = _load_strategy_from_file(
         file_path=file_path
     )

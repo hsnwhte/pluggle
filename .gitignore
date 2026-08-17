@@ -28,6 +28,7 @@ htmlcov/
 *.db
 data/
 *.sqlite
+databases/
 
 # IDE / editor
 .vscode/

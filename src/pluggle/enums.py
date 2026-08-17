@@ -7,6 +7,7 @@ class Phase(enum.Enum):
     A run uses either FETCH or DECODE depending on source type, and
     either LOAD or EXPORT depending on target type.
     """
+
     FETCH = "fetch"
     DECODE = "decode"
     EXTRACT = "extract"
@@ -27,6 +28,7 @@ class ContentFormat(enum.Enum):
     Distinct from MimeType, which carries the wire-level strings used in
     HTTP headers. The two share member names where they overlap.
     """
+
     JSON = "json"
     XML = "xml"
     CSV = "csv"
@@ -42,6 +44,7 @@ class MimeType(enum.Enum):
     Broader than ContentFormat: image types are included for outgoing
     Content-Type headers but have no decode or extract support.
     """
+
     JSON = "application/json"
     XML = "application/xml"
     CSV = "text/csv"
@@ -68,3 +71,8 @@ class CliListType(enum.Enum):
 class CliInspectType(enum.Enum):
     REGISTRY = "registry"
     PAYLOAD = "payload"
+
+
+class DevEnvType(enum.Enum):
+    DEV = "dev"
+    REAL = "real"

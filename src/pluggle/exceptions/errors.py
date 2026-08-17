@@ -288,5 +288,18 @@ class StorageError(PluggleError):
 class FetchCacheNotFoundError(StorageError):
     """Fetch cache does not exist or was deleted"""
 
+
 class PayloadNotFoundError(StorageError):
     """The requested payload does not exist or has been deactivated."""
+
+
+class StrategySetupError(PluggleError):
+    """Errors related to set-up of transform strategies"""
+
+
+class InvalidStrategyNameError(StrategySetupError):
+    """Strategy name does not fit to the preset naming convension"""
+
+
+class InvalidStrategyVersionError(StrategySetupError):
+    """Strategy version does not fit to the preset naming convension"""

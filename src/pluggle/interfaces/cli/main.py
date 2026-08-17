@@ -14,7 +14,7 @@ from pluggle.exceptions import errors
 from pluggle.logging_config import setup_logging
 from pluggle.models.dto import InputArgs
 from pluggle.orchestrator import Orchestrator
-from pluggle.strategies.transform import TRANSFORM_STRATEGY_MAP, transform_installer
+from pluggle.strategies.transform import TRANSFORM_STRATEGY_MAP, strategy_installer
 from pluggle.unit_of_work import UnitOfWork
 
 logger = logging.getLogger(__name__)
@@ -54,11 +54,11 @@ def run(
         "-td",
         help="Location of the target: a file path, a DB connection string, or a URL.",
     ),
-    transform_strategy_uid: str = typer.Option(
-        "default",
+    transform_strategy_name: str = typer.Option(
+        "default_v1.0",
         "--transform-strategy",
         "-S",
-        help="UID of an installed Transform strategy, or 'default' for the built-in passthrough.",
+        help="Name of an installed Transform strategy. Leave empty for the built-in passthrough.",
     ),
     source_table: str = typer.Option(
         None,
@@ -90,7 +90,7 @@ def run(
             target_address=target_address,
             target_table=target_table,
             target_format=target_format,
-            transform_strategy_uid=transform_strategy_uid,
+            transform_strategy_name=transform_strategy_name,
         )
     except (ValidationError, AttributeError) as e:
         logger.error(f"Invalid prompt: {e}")
@@ -127,9 +127,11 @@ def show(
             total = len(TRANSFORM_STRATEGY_MAP)
             typer.echo(f"Total strategies: {total}\n")
             items = sorted(TRANSFORM_STRATEGY_MAP.items())[:limit]
-            for uid, cls in items:
-                marker = " (default, cannot uninstall)" if uid == "default" else ""
-                typer.echo(f"{uid}: {cls.__name__}{marker}")
+            for name, cls in items:
+                marker = (
+                    " (default, cannot uninstall)" if name == "default_v1.0" else ""
+                )
+                typer.echo(f"{name}: {cls.__name__}{marker}")
 
         elif mode == CliListType.RUNS:
             total = uow.run_records_store.count_runs()
@@ -223,8 +225,8 @@ def install_strategy(
         kwargs = {"strategy_path": path}
 
     try:
-        new_uid, doc_url = transform_installer.install_strategy(**kwargs)
-        typer.echo(f"Strategy installed successfully with uid: {new_uid}")
+        new_name, doc_url = strategy_installer.install_strategy(**kwargs)
+        typer.echo(f"Strategy installed successfully with name: {new_name}")
 
     except errors.PluggleError as e:
         logger.error(f"Strategy install failed: {e}")
@@ -234,19 +236,19 @@ def install_strategy(
 
 @app.command(name="uninstall-strategy")
 def uninstall_strategy(
-    uid: str = typer.Option(
+    name: str = typer.Option(
         None,
-        "--uid",
-        "-u",
-        help="UID of the installed strategy to remove (see 'pluggle show --mode strategies').",
+        "--name",
+        "-n",
+        help="Name of the installed strategy to remove (see 'pluggle show --mode strategies').",
     ),
     all_strategies: bool = typer.Option(
         False, "--all", "-a", help="Uninstall every installed strategy."
     ),
 ):
     """Removes one or all installed Transform strategy/strategies."""
-    if not uid and not all_strategies:
-        typer.echo("You must provide either --uid or --all.")
+    if not name and not all_strategies:
+        typer.echo("You must provide either --name or --all.")
         raise typer.Exit(code=1)
     if all_strategies:
         confirmed = typer.confirm("This will uninstall all strategies. Continue?")
@@ -254,7 +256,7 @@ def uninstall_strategy(
             typer.echo("Cancelled.")
             raise typer.Exit()
         try:
-            transform_installer.uninstall_all()
+            strategy_installer.uninstall_all()
         except errors.TransformError as e:
             logger.error(f"Strategy uninstall failed: {e}")
             typer.echo(f"Uninstall failed: {e}", err=True)
@@ -262,8 +264,8 @@ def uninstall_strategy(
         typer.echo("All strategies uninstalled successfully.")
         return
     try:
-        transform_installer.uninstall_strategy(uid=uid)
-        typer.echo(f"Strategy {uid} uninstalled successfully.")
+        strategy_installer.uninstall_strategy(strategy_name=name)
+        typer.echo(f"Strategy {name} uninstalled successfully.")
     except errors.PluggleError as e:
         logger.error(f"Strategy uninstall failed: {e}")
         typer.echo(f"Uninstall failed: {e}", err=True)

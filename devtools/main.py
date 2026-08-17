@@ -7,10 +7,12 @@ import typer
 from pydantic import ValidationError
 
 from devtools import settings as dev_settings
+
+os.environ["PLUGGLE_STORE_ADDRESS"] = dev_settings.DEV_RUNTIME_POSTGRE
+
 from devtools.test_packages import TEST_PACKAGES
 from devtools.tools import db_tools
-from pluggle import settings as runtime_settings
-from pluggle.enums import ContentFormat, PluggleIOType
+from pluggle.enums import ContentFormat, DevEnvType, PluggleIOType
 from pluggle.exceptions import errors
 from pluggle.logging_config import setup_logging
 from pluggle.models.dto import InputArgs
@@ -19,8 +21,6 @@ from pluggle.unit_of_work import UnitOfWork
 
 logger = logging.getLogger(__name__)
 dev = typer.Typer()
-
-os.environ["PLUGGLE_STORE_ADDRESS"] = dev_settings.DEV_RUNTIME_POSTGRE
 
 
 @dev.callback()
@@ -35,7 +35,7 @@ def test(
     source_address: str = typer.Option(None, "--source-address", "-soad"),
     target_type: PluggleIOType = typer.Option(None, "--target-type", "-taty"),
     target_address: str = typer.Option(None, "--target-address", "-taad"),
-    transform_strategy_uid: str = typer.Option(None, "--transform-strategy", "-tsu"),
+    transform_strategy_name: str = typer.Option(None, "--transform-strategy", "-ts"),
     source_table: str = typer.Option(None, "--source-table", "-sota"),
     target_table: str = typer.Option(None, "--target-table", "-tata"),
     target_format: ContentFormat = typer.Option(
@@ -66,7 +66,7 @@ def test(
                 target_address=target_address,
                 target_table=target_table,
                 target_format=target_format,
-                transform_strategy_uid=transform_strategy_uid,
+                transform_strategy_name=transform_strategy_name,
             )
         except (ValidationError, AttributeError) as e:
             logger.error(f"Invalid input: {e}")
@@ -108,37 +108,44 @@ def inspect(
 
 @dev.command(name="setup-test-env")
 def setup_test_env():
-    eng_pipe = db_tools.get_engine(url=dev_settings.DEV_RUNTIME_POSTGRE, echo=True)
-    db_tools.create_all_runtime_tables(engine=eng_pipe)
-    eng_src = db_tools.get_engine(url=dev_settings.DEV_RUNTIME_POSTGRE, echo=True)
+    eng_runtime = db_tools.get_engine(url=dev_settings.DEV_RUNTIME_POSTGRE, echo=True)
+    db_tools.create_all_runtime_tables(engine=eng_runtime)
+    eng_src = db_tools.get_engine(url=dev_settings.DEV_SOURCE_DB_URL, echo=True)
     db_tools.create_all_source_tables(engine=eng_src)
-    eng_trg = db_tools.get_engine(url=dev_settings.DEV_RUNTIME_POSTGRE, echo=True)
+    eng_trg = db_tools.get_engine(url=dev_settings.DEV_TARGET_DB_URL, echo=True)
     db_tools.create_all_target_tables(engine=eng_trg)
 
 
 @dev.command(name="reset-test-env")
 def reset_test_env():
-    eng_pipe = db_tools.get_engine(url=dev_settings.DEV_RUNTIME_POSTGRE, echo=True)
-    db_tools.reset_all_runtime_tables(engine=eng_pipe)
-    eng_src = db_tools.get_engine(url=dev_settings.DEV_RUNTIME_POSTGRE, echo=True)
+    eng_runtime = db_tools.get_engine(url=dev_settings.DEV_RUNTIME_POSTGRE, echo=True)
+    db_tools.reset_all_runtime_tables(engine=eng_runtime)
+    eng_src = db_tools.get_engine(url=dev_settings.DEV_SOURCE_DB_URL, echo=True)
     db_tools.reset_all_source_tables(engine=eng_src)
-    eng_trg = db_tools.get_engine(url=dev_settings.DEV_RUNTIME_POSTGRE, echo=True)
+    eng_trg = db_tools.get_engine(url=dev_settings.DEV_TARGET_DB_URL, echo=True)
     db_tools.reset_all_target_tables(engine=eng_trg)
 
 
 @dev.command(name="hard-reset-test-env")
 def hard_reset_test_env():
-    eng_pipe = db_tools.get_engine(url=dev_settings.DEV_RUNTIME_POSTGRE, echo=True)
-    db_tools.drop_all_runtime_tables(engine=eng_pipe)
-    eng_src = db_tools.get_engine(url=dev_settings.DEV_RUNTIME_POSTGRE, echo=True)
+    eng_runtime = db_tools.get_engine(url=dev_settings.DEV_RUNTIME_POSTGRE, echo=True)
+    db_tools.drop_all_runtime_tables(engine=eng_runtime)
+    eng_src = db_tools.get_engine(url=dev_settings.DEV_SOURCE_DB_URL, echo=True)
     db_tools.drop_all_source_tables(engine=eng_src)
-    eng_trg = db_tools.get_engine(url=dev_settings.DEV_RUNTIME_POSTGRE, echo=True)
+    eng_trg = db_tools.get_engine(url=dev_settings.DEV_TARGET_DB_URL, echo=True)
     db_tools.drop_all_target_tables(engine=eng_trg)
 
 
 @dev.command(name="reset-runtime-db")
-def reset_runtime_db():
-    eng_runtime = db_tools.get_engine(url=runtime_settings.RUNTIME_STORE, echo=True)
+def reset_runtime_db(
+    env: DevEnvType = typer.Option(DevEnvType.DEV, "--env", "-e"),
+):
+    url = (
+        dev_settings.DEV_RUNTIME_POSTGRE
+        if env == DevEnvType.DEV
+        else dev_settings.REAL_RUNTIME_STORE
+    )
+    eng_runtime = db_tools.get_engine(url=url, echo=True)
     db_tools.reset_all_runtime_tables(engine=eng_runtime)
 
 

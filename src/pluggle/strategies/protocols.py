@@ -2,7 +2,12 @@ from pathlib import Path
 from typing import Protocol, runtime_checkable
 
 from pluggle.enums import ContentFormat
-from pluggle.models.dto import ExtractableData, TransformableData, TransformedData
+from pluggle.models.dto import (
+    ExtractableData,
+    StrategyMeta,
+    TransformableData,
+    TransformedData,
+)
 
 
 class FetchStrategyProtocol(Protocol):
@@ -22,6 +27,8 @@ class ExtractStrategyProtocol(Protocol):
 
 @runtime_checkable
 class TransformStrategyProtocol(Protocol):
+    meta: StrategyMeta
+
     def transform(self) -> TransformedData: ...
 
 

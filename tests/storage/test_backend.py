@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from pluggle.enums import ContentFormat, Phase, RunStatus
 from pluggle.exceptions import errors
 from pluggle.helpers import generate_hash
-from pluggle.models.orm import PluggleORM, PipelineRunRecord
+from pluggle.models.orm import PipelineRunRecord, PluggleORM
 from pluggle.storage.backend import (
     FetchCacheStore,
     PayloadStore,

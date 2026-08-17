@@ -6,7 +6,6 @@ from pathlib import Path
 import httpx
 
 from pluggle.exceptions import errors
-from pluggle.helpers import generate_strategy_uid
 from pluggle.strategies.protocols import TransformStrategyProtocol
 
 CATALOG_URL = (
@@ -19,37 +18,43 @@ INSTALLED_DIR.mkdir(exist_ok=True)
 
 
 def install_strategy(
-    *, strategy_path: Path | None = None, repo_name: str | None
+    *, strategy_path: Path | None = None, repo_name: str | None = None
 ) -> tuple[str, str | None]:
     doc_url = None
+    if not strategy_path and not repo_name:
+        raise errors.StrategySetupError(
+            "No argument is provided. Expected: 'strategy_path' OR 'repo_name'"
+        )
     if repo_name is not None:
         strategy_path, doc_url = _fetch_strategy_from_repo(repo_name=repo_name)
 
-    _load_strategy_from_file(file_path=strategy_path)
+    strategy = _load_strategy_from_file(file_path=strategy_path)
+    strategy_name = strategy.meta.name + "_" + strategy.meta.version
 
-    uid = generate_strategy_uid()
-    destination = INSTALLED_DIR / f"{uid}.py"
+    destination = INSTALLED_DIR / f"{strategy_name}.py"
     shutil.copy(strategy_path, destination)
 
-    return uid, doc_url
+    return strategy_name, doc_url
 
 
-def uninstall_strategy(*, uid: str) -> None:
-    target = INSTALLED_DIR / f"{uid}.py"
+def uninstall_strategy(*, strategy_name: str) -> None:
+    target = INSTALLED_DIR / f"{strategy_name}.py"
     if not target.exists():
-        raise errors.StrategyNotFoundError(f"No installed strategy with uid '{uid}'.")
+        raise errors.StrategyNotFoundError(
+            f"No installed strategy with name '{strategy_name}'."
+        )
 
     target.unlink()
 
 
 def uninstall_all() -> None:
     print(INSTALLED_DIR)
-    uids = [f.stem for f in INSTALLED_DIR.glob("*.py")]
-    print(uids)
-    if not uids:
+    names = [f.stem for f in INSTALLED_DIR.glob("*.py")]
+    print(names)
+    if not names:
         raise errors.StrategyNotFoundError("No installed strategies to remove.")
-    for uid in uids:
-        uninstall_strategy(uid=uid)
+    for name in names:
+        uninstall_strategy(strategy_name=name)
 
 
 def _fetch_strategy_from_repo(*, repo_name: str) -> tuple[Path, str | None]:
@@ -117,7 +122,7 @@ def _load_strategy_from_file(*, file_path: Path) -> type[TransformStrategyProtoc
             f" {matches}. Exactly one is required."
         )
     strategy_class = getattr(module, matches[0])
-    if not issubclass(strategy_class, TransformStrategyProtocol):
+    if not hasattr(strategy_class, "transform") + hasattr(strategy_class, "meta"):
         raise errors.StrategyNotFoundError(
             f"{strategy_class.__class__.__name__} does not implement "
             f"TransformStrategyProtocol"
