@@ -109,5 +109,10 @@ CLI. `transform_installer` renamed to
 pluggle imports and never took effect, so test runs wrote to a stale SQLite file while
 `setup-test-env` prepared PostgreSQL.
 
+v0.11 [DONE] -- Installed strategies moved out of the package directory. Location is now
+configurable via `PLUGGLE_STRATEGIES_DIR`, defaulting to `data/strategies`, so
+strategies survive a virtualenv rebuild and don't depend on site-packages being
+writable.
+
 v1.0 -- Full release: portfolio-ready. Documented, tested, demonstrably extensible.
 Public-facing polish complete.

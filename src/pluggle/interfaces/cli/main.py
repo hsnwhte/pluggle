@@ -219,7 +219,9 @@ def install_strategy(
         raise typer.Exit(code=1)
     try:
         if install_all:
-            confirmed = typer.confirm("This will uninstall all strategies. Continue?")
+            confirmed = typer.confirm(
+                "This will install all strategies at 'https://github.com/hsnwhthe/pluggle-strategies', continue?"
+            )
             if not confirmed:
                 typer.echo("Cancelled.")
                 raise typer.Exit()

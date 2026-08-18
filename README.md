@@ -1,6 +1,6 @@
 <img src="https://raw.githubusercontent.com/hsnwhte/pluggle/main/assets/banner.svg" width="150" alt="Pluggle">
 
-# Pluggle v0.10.0 - beta
+# Pluggle v0.11.0 - beta
 
 Generic, plugin-based ETL & data sync engine. Fetches from a source transforms it, and
 loads it to a target — with the transform step designed to carry your own business
@@ -34,6 +34,7 @@ Pluggle reads optional settings from a `.env` file in the project root:
 
 ```
 PLUGGLE_STORE_ADDRESS=sqlite:///data/runtime.sqlite
+PLUGGLE_STRATEGIES_DIR=data/strategies
 LOG_DIR=logs
 ```
 
@@ -47,6 +48,10 @@ cp .env.example .env
 are both verified. `LOG_DIR` may be relative to the project root or an absolute path.
 Both have sensible defaults, so a `.env` file is optional; tables are created
 automatically on first run.
+
+`PLUGGLE_STRATEGIES_DIR` sets where installed strategies are stored — relative to the
+project root or an absolute path. Keep it on persistent storage when deploying, so
+strategies survive a rebuild.
 
 For local PostgreSQL testing, `docker-compose.yml` is included:
 
@@ -137,9 +142,9 @@ Or install everything the catalog offers, skipping what's already present:
 pluggle install-strategy --all
 ```
 
-Installing copies the file into Pluggle's `installed/` folder as
-`<name>_<version>.py`. List what's installed with `pluggle show --mode strategies`, then
-reference one in a run:
+Installing copies the file into Pluggle's strategies directory as `<name>_<version>.py`.
+List what's installed with `pluggle show --mode strategies`, then reference one in a
+run:
 
 ```bash
 pluggle run ... --transform-strategy <name>_<version>
@@ -159,7 +164,7 @@ Or remove every installed strategy at once (asks for confirmation):
 pluggle uninstall-strategy --all
 ```
 
-`default` cannot be uninstalled. Don't edit the `installed/` folder by hand — use these
+`default` cannot be uninstalled. Don't edit the strategies directory by hand — use these
 commands so the strategy map always matches what's actually on disk.
 
 ## 5. Programmatic API

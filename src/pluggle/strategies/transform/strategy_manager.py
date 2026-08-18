@@ -6,6 +6,7 @@ from pathlib import Path
 import httpx
 
 from pluggle.exceptions import errors
+from pluggle.settings import INSTALLED_STRATEGIES_DIR
 from pluggle.strategies.protocols import TransformStrategyProtocol
 
 CATALOG_URL = (
@@ -13,14 +14,11 @@ CATALOG_URL = (
 )
 RAW_BASE = "https://raw.githubusercontent.com/hsnwhte/pluggle-strategies/main/"
 
-INSTALLED_DIR = Path(__file__).resolve().parent / "installed"
-INSTALLED_DIR.mkdir(exist_ok=True)
-
 
 def install_from_path(*, file_path: Path) -> str:
     strategy = _load_strategy_from_file(file_path=file_path)
     strategy_name = strategy.meta.name + "_" + strategy.meta.version
-    destination = INSTALLED_DIR / f"{strategy_name}.py"
+    destination = INSTALLED_STRATEGIES_DIR / f"{strategy_name}.py"
     if destination.exists():
         raise errors.StrategySetupError(
             f"A strategy with name '{strategy_name}' already exists."
@@ -51,7 +49,7 @@ def install_all_in_repo() -> tuple:
     total = len(catalog_entries.keys())
     skipped = 0
     for entry in catalog_entries:
-        destination = INSTALLED_DIR / f"{entry}.py"
+        destination = INSTALLED_STRATEGIES_DIR / f"{entry}.py"
         if destination.exists():
             skipped += 1
             continue
@@ -65,7 +63,7 @@ def install_all_in_repo() -> tuple:
 
 
 def uninstall_strategy(*, strategy_name: str) -> None:
-    target = INSTALLED_DIR / f"{strategy_name}.py"
+    target = INSTALLED_STRATEGIES_DIR / f"{strategy_name}.py"
     if not target.exists():
         raise errors.StrategyNotFoundError(
             f"No installed strategy with name '{strategy_name}'."
@@ -74,7 +72,7 @@ def uninstall_strategy(*, strategy_name: str) -> None:
 
 
 def uninstall_all() -> None:
-    names = [f.stem for f in INSTALLED_DIR.glob("*.py")]
+    names = [f.stem for f in INSTALLED_STRATEGIES_DIR.glob("*.py")]
     if not names:
         raise errors.StrategyNotFoundError("No installed strategies to remove.")
     for name in names:
