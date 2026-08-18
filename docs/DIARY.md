@@ -1147,3 +1147,15 @@ uniformity and rejected it — that trades a guarantee for a cosmetic symmetry.
 Loading was never affected: `_load_strategy_from_file` uses `importlib`
 against a file path, so the directory can be anywhere.
 
+**09:26** | *[PATCH - V0.11.1]*
+**Runtime paths now resolve against the working directory**
+
+`PROJECT_ROOT` was computed from `settings.py`'s own location, which points at the
+project root during development but somewhere above site-packages once Pluggle is
+pip-installed — so `data/`, `logs/` and the strategies directory landed in meaningless
+places for consuming applications. `load_dotenv()` had the same problem and couldn't
+find the caller's `.env` at all.
+
+Renamed to `RUNTIME_ROOT` and switched to `Path.cwd()`; `load_dotenv()`
+now runs without an explicit path, searching upward from the working directory. No
+change during development, since commands are run from the project root anyway.

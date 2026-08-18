@@ -1,6 +1,6 @@
 <img src="https://raw.githubusercontent.com/hsnwhte/pluggle/main/assets/banner.svg" width="150" alt="Pluggle">
 
-# Pluggle v0.11.0 - beta
+# Pluggle v0.11.1 - beta
 
 Generic, plugin-based ETL & data sync engine. Fetches from a source transforms it, and
 loads it to a target — with the transform step designed to carry your own business
