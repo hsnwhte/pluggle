@@ -23,5 +23,11 @@ RUNTIME_STORE = os.environ.get(
 LOG_DIR = Path(os.environ.get("LOG_DIR", PROJECT_ROOT / "logs"))
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 
-### --- System variables
+# --- Installed Strategies
+INSTALLED_STRATEGIES_DIR = Path(
+    os.environ.get("PLUGGLE_STRATEGIES_DIR", PROJECT_ROOT / "data" / "strategies")
+)
+INSTALLED_STRATEGIES_DIR.mkdir(parents=True, exist_ok=True)
+
+# --- System variables
 NORMALIZED_FORMAT = ContentFormat.JSON

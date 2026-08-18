@@ -1124,3 +1124,26 @@ the conflict check had gone missing entirely, so a reinstall silently overwrote;
 error message used `__class__.__name__` on a class, which prints `type`. Also a stale
 `catalog.json` whose `file` paths dropped the `strategies/` prefix, producing 404s on
 install.
+
+### 📅 2026-08-18, Tuesday
+
+**08:52** | *[RESOLVE]*
+**Installed strategies moved out of the package directory**
+
+`INSTALLED_DIR` pointed at `strategies/transform/installed/`, i.e. inside site-packages
+once Pluggle is pip-installed. Two problems: strategies vanish with the virtualenv, and
+site-packages isn't reliably writable (system Python, read-only image layers).
+
+Now configurable via `PLUGGLE_STRATEGIES_DIR`, defaulting to
+`data/strategies` — the same override-or-default pattern already used for
+`PLUGGLE_STORE_ADDRESS` and `LOG_DIR`, and under `data/`, which
+`.gitignore` already covers. The path lives in `settings.py` with the others rather than
+being computed where it's used.
+
+`default` stays inside the package: it's imported statically, not scanned, so it can't
+be deleted or corrupted. Considered copying it into the strategies directory for
+uniformity and rejected it — that trades a guarantee for a cosmetic symmetry.
+
+Loading was never affected: `_load_strategy_from_file` uses `importlib`
+against a file path, so the directory can be anywhere.
+
