@@ -1,5 +1,22 @@
+import logging
+
 from pluggle.exceptions import errors
+from pluggle.models.dto import InputArgs, InstallReport
+from pluggle.orchestrator import Orchestrator
 from pluggle.strategies.transform import TRANSFORM_STRATEGY_MAP, strategy_manager
+
+logger = logging.getLogger(__name__)
+
+
+def run(input_args: InputArgs) -> int:
+    """Run a full ETL pipeline from source to target."""
+    orchestrator = Orchestrator(input_args=input_args)
+    try:
+        entry_id = orchestrator.run()
+    except errors.PluggleError as e:
+        logger.error(f"Pipeline FAILED: {e}")
+        raise
+    return entry_id
 
 
 def list_available_strategies() -> list[str]:
@@ -21,7 +38,7 @@ def install_from_repo(repo_name: str) -> tuple[str, str | None]:
         raise
 
 
-def install_all_in_repo() -> dict:
+def install_all_in_repo() -> InstallReport:
     try:
         return strategy_manager.install_all_in_repo()
     except errors.StrategyNotFoundError, errors.StrategySetupError:

@@ -6,6 +6,7 @@ from pathlib import Path
 import httpx
 
 from pluggle.exceptions import errors
+from pluggle.models.dto import InstallReport
 from pluggle.settings import INSTALLED_STRATEGIES_DIR
 from pluggle.strategies.protocols import TransformStrategyProtocol
 
@@ -43,10 +44,9 @@ def install_from_repo(*, repo_name: str) -> tuple[str, str]:
         raise
 
 
-def install_all_in_repo() -> tuple:
+def install_all_in_repo() -> InstallReport:
     catalog_entries = get_repo_catalog()
-    result = []
-    total = len(catalog_entries.keys())
+    installed = []
     skipped = 0
     for entry in catalog_entries:
         destination = INSTALLED_STRATEGIES_DIR / f"{entry}.py"
@@ -54,12 +54,14 @@ def install_all_in_repo() -> tuple:
             skipped += 1
             continue
 
-        fetched_strategy_path, doc_url = _fetch_strategy_from_repo(
+        fetched_strategy_path, _ = _fetch_strategy_from_repo(
             catalog_entries=catalog_entries, strategy_name=entry
         )
         strategy_name = install_from_path(file_path=fetched_strategy_path)
-        result.append((strategy_name, doc_url))
-    return total, skipped
+        installed.append(strategy_name)
+    return InstallReport(
+        total=len(catalog_entries), skipped=skipped, installed=installed
+    )
 
 
 def uninstall_strategy(*, strategy_name: str) -> None:
@@ -150,7 +152,7 @@ def _load_strategy_from_file(*, file_path: Path) -> type[TransformStrategyProtoc
             f" {matches}. Exactly one is required."
         )
     strategy_class = getattr(module, matches[0])
-    if not hasattr(strategy_class, "transform") and not hasattr(strategy_class, "meta"):
+    if not hasattr(strategy_class, "transform") or not hasattr(strategy_class, "meta"):
         raise errors.StrategyNotFoundError(
             f"{strategy_class.__name__} does not implement TransformStrategyProtocol"
         )

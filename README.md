@@ -1,6 +1,6 @@
 <img src="https://raw.githubusercontent.com/hsnwhte/pluggle/main/assets/banner.svg" width="150" alt="Pluggle">
 
-# Pluggle v0.11.1 - beta
+# Pluggle v0.12.0 - beta
 
 Generic, plugin-based ETL & data sync engine. Fetches from a source transforms it, and
 loads it to a target — with the transform step designed to carry your own business
@@ -174,13 +174,15 @@ applications to call in-process, without going through the CLI:
 
 ```python
 from pluggle.interfaces import api
+from pluggle.models.dto import InputArgs
+
+api.run(input_args)  # execute a pipeline, returns the final registry entry id
 
 api.list_available_strategies()  # names in the pluggle-strategies catalog
 api.list_installed_strategies()  # names currently installed
-api.install_from_repo(name)
-api.install_from_path(path)
-api.install_all_from_repo()  # skips what's already installed
-api.uninstall(name)
+api.install_from_repo(repo_name)
+api.install_all_in_repo()  # skips what's already installed
+api.uninstall(strategy_name)
 api.uninstall_all()
 ```
 
@@ -189,9 +191,6 @@ calling application decides how to report them.
 
 ## 6. Known Limitations
 
-- **No filename/format consistency check**: nothing validates that a file's extension
-  matches `--target-format` (e.g. writing JSON content to a `.xml`-named file goes
-  unflagged).
 - **No dependency management for installed strategies**: a Transform strategy installed
   via `install-strategy` may import third-party libraries not bundled with Pluggle. You
   are responsible for installing any such dependencies yourself — Pluggle does not

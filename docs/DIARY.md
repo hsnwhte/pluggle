@@ -1159,3 +1159,57 @@ find the caller's `.env` at all.
 Renamed to `RUNTIME_ROOT` and switched to `Path.cwd()`; `load_dotenv()`
 now runs without an explicit path, searching upward from the working directory. No
 change during development, since commands are run from the project root anyway.
+
+### 📅 2026-08-20, Thursday
+
+**08:02** | *[RESOLVE v0.12.0]*
+
+**`run` added to the programmatic API; target extension validated; strategy_manager
+tested**
+
+**`api.run(input_args)`** completes the programmatic interface — other applications can
+now execute a pipeline, not just manage strategies. Takes a populated `InputArgs` rather
+than a dict or JSON: the caller is in-process and already using Pydantic, so serialising
+at this boundary would only mean parsing it back. Returns the final registry entry id
+and lets `PluggleError` propagate, leaving HTTP status mapping to the layer that owns
+it. Considered returning a `{"status": ..., "message": ...}`
+dict instead and rejected it — swallowing the exception would discard the error
+hierarchy that makes 404-vs-502 decisions possible, and a plain `-> dict` hides its own
+shape from the caller.
+
+Removed a `setup_logging()` call that sat at module level in `api.py`. It cleared and
+rebuilt the `pluggle` logger's handlers on import, which would have overwritten the
+logging configuration of any application using the library. Configuring logging is the
+application's decision, not the library's.
+
+**Target extension is now validated** against `target_format` in an
+`InputArgs` validator: file targets must carry an extension, and it must match the
+declared format. Catching this before the pipeline starts beats failing four phases in
+at Export. `.htm` is accepted as `html`
+via a hardcoded line — considered a lookup table and a `ContentFormat`
+classmethod, but building either for a single exception isn't worth it. This closes the
+first entry in the README's known limitations.
+
+**`strategy_manager` now has tests** — 20 of them, covering the module that carried the
+whole v0.10 identity refactor without any. Installs are redirected to a temp directory
+by monkeypatching the module-level
+`INSTALLED_STRATEGIES_DIR`, and `httpx.get` is faked, so nothing touches the real
+strategies directory or the network. Covers: loading a valid strategy, and each failure
+branch (missing file, syntax error, no matching class, multiple matching classes,
+missing `meta`); install by path including duplicate rejection and side-by-side
+versions; catalog fetch success and network failure; repo install; bulk install counts
+and skipping; uninstall single and all.
+
+**Two bugs the tests surfaced:** the protocol check read
+`not hasattr(a) and not hasattr(b)`, so it only rejected a class missing *both*
+`transform` and `meta` — a strategy without `meta` passed straight through. And
+`install_all_in_repo` built a `result` list it never returned, reporting only counts.
+Both fixed; the bulk install now returns an `InstallReport` model (`total`, `skipped`,
+`installed`)
+rather than a bare tuple, so the caller reads named fields instead of guessing at
+positions.
+
+**Also spent an hour** on tests that kept failing against code that was already correct:
+`pluggle` was installed from PyPI in this venv, so the edits weren't being loaded at
+all. `pip install -e .` in the repo. Worth remembering as a first check when a fix
+"doesn't take".
