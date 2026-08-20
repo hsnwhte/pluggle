@@ -80,6 +80,22 @@ class InputArgs(BaseModel):
             raise ValueError("target_table is required when target_type is 'db'")
         return self
 
+    @model_validator(mode="after")
+    def validate_target_extension(self):
+        if self.target_type != PluggleIOType.FILE:
+            return self
+        suffix = Path(self.target_address).suffix.lstrip(".").lower()
+        if not suffix:
+            raise ValueError(f"Target file '{self.target_address}' has no extension.")
+        if suffix == "htm":
+            suffix = "html"
+        if suffix != self.target_format.value:
+            raise ValueError(
+                f"Target extension '.{suffix}' does not match target format "
+                f"'{self.target_format.value}'."
+            )
+        return self
+
 
 class FetchCacheData(BaseModel):
     model_config = {"frozen": True}
@@ -127,3 +143,9 @@ class TransformableData(BaseModel):
 class TransformedData(BaseModel):
     model_config = {"frozen": True}
     content: bytes
+
+
+class InstallReport(BaseModel):
+    total: int
+    skipped: int
+    installed: list[str]

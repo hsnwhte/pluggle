@@ -114,5 +114,13 @@ configurable via `PLUGGLE_STRATEGIES_DIR`, defaulting to `data/strategies`, so
 strategies survive a virtualenv rebuild and don't depend on site-packages being
 writable.
 
+v0.12 [DONE] -- `api.run(input_args)` added, completing the programmatic interface —
+applications can now execute pipelines, not just manage strategies. Target file
+extension is validated against `target_format` before the pipeline starts; mismatches
+and missing extensions are rejected. `strategy_manager` covered by tests, which surfaced
+a protocol check that let strategies without `meta` pass and a bulk install that
+discarded its own results. Bulk install now returns an
+`InstallReport` instead of a tuple.
+
 v1.0 -- Full release: portfolio-ready. Documented, tested, demonstrably extensible.
 Public-facing polish complete.

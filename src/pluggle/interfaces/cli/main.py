@@ -220,18 +220,21 @@ def install_strategy(
     try:
         if install_all:
             confirmed = typer.confirm(
-                "This will install all strategies at 'https://github.com/hsnwhthe/pluggle-strategies', continue?"
+                "This will install all strategies at 'https://github.com/hsnwhte/pluggle-strategies', continue?"
             )
             if not confirmed:
                 typer.echo("Cancelled.")
                 raise typer.Exit()
             logger.info("Installing all strategies in pluggle-strategies repo")
-            total, skipped = strategy_manager.install_all_in_repo()
-            typer.echo(
-                f"Total: {total}\n"
-                f"Installed: {total - skipped}\n"
-                f"Skipped: {skipped} (already present)"
-            )
+            report = strategy_manager.install_all_in_repo()
+            lines = [
+                f"Total in catalog: {report.total}",
+                f"Installed: {len(report.installed)}",
+                f"Skipped: {report.skipped} (already present)",
+            ]
+            if report.installed:
+                lines += ["", "--- Installed ---", *report.installed]
+            typer.echo("\n".join(lines))
 
         if path and repo:
             logger.warning(
